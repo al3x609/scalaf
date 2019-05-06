@@ -9,92 +9,20 @@ Trataré de comentar cada paso lo mejor posible
 #include <unistd.h>
 #include "math.h"
 #include "string.h"
-
-// constantes de filas y columnas máximas
-// se usaron para pruebas, pero ya no son necesarias
-// se dejan por si acaso, y para ilustrar el proceso.
-#define MAX_ROWS 16
-#define MAX_COLS 16
-
-// estas son las constantes físicas necesarias para los cálculos.
-// algunas se redefinen por parámetros de entrada del programa.
-#define density 2500.0
-#define gravity 9.8
-#define cellWidth 10.0
-#define heatCapacity 840.0
-#define emisivity 0.9
-#define SBConst 0.0000000568
-#define extrudeRate 130 // 0.2
-#define extrudeTemp 1300.0
-#define dt 1
-
-// Esta es la estructura de cada celda
-typedef struct {
-	double thickness;
-	double temperature;
-	double altitude;
-	int isVent;
-	double yield;
-	double viscosity;
-	short exits;
-	double inboundV;
-	double outboundV;
-	double inboundQ;
-} celda;
-
-// estructura de los puntos de los cráteres
-typedef struct {
-	int x;
-	int y;
-} puntoC;
-
-// estructura de las condiciones iniciales
-typedef struct {
-	int tFilas;
-	int tColumnas;
-	double anchoCelda;
-	double eRate;
-	double eTemp;
-	double deltat;
-	int nPasos;
-} cIni;
-
-// prototipos de las funciones principales
-void FuncionPrincipal(int filas, int columnas, celda *A, celda *C);
-int leerArchivoTexto_Matriz(char *path, int filas, int columnas, celda *matriz);
-void preFuncion(int , int , const celda *, celda *);
-void postFuncion(int , int , const celda *A, celda *C);
-int leerArchivoPuntos(char *, int, puntoC *);
-int colocarCrateres(celda *, const puntoC *, int, int, int);
-
-// funciones de utilidades, prototipos
-int limpiarPath(char [], char []);
-int obtenerPath(char []);
-void imprimirMatrizPantalla(int, int, const celda *, int);
-void imprimirMatrizPantalla_2(int, int, const celda *, int);
-int prepararVisualizacionGNUPlot(int, char *, int, int, celda *, int, double, double, double);
-int prepararVisualizacionGNUPlot_2(int, char *, int, int, celda *, int, double, double, double);
-
-// funciones de cálculo de valores físicos
-double visc(double);
-double yield(double);
-
-// funciones de prueba o incompletas, prototipos
-int generarAnimacionGNUPlot(char [], int );
-void testAnimacion(void);
+#include "proto.h"
 
 double visc(double temp) {
 	// funcion que cálcula la viscosidad a partir de la temperatura,
 	// tomada del artículo de Miyamoto y Sasaki
-	// return pow(10, (20.0*(exp(-0.001835*(temp-273.0)))));
-	return 850.00;
+	return pow(10, (20.0*(exp(-0.001835*(temp-273.0)))));
+	//return 850.00;
 }
 
 double yield(double temp) {
 	// funcion que cálcula la tensión cortante a partir de la temperatura,
 	// tomada del artículo de Miyamoto y Sasaki
-	// return pow(10 ,(11.67-0.0089*(temp-273.0)));
-	return 225.00;
+	return pow(10 ,(11.67-0.0089*(temp-273.0)));
+	// return 225.00;
 }
 
 
@@ -102,7 +30,7 @@ double yield(double temp) {
 // de un estructura que guarda puntos en 2D (coordenadas de la matriz)
 // unicamente y revisa que los puntos esten enter el rango correcto
 // de las posiciones.
-int colocarCrateres(celda *A, const puntoC *P, int filas, int columnas, int puntos) {
+void colocarCrateres(celda *A, const puntoC *P, int filas, int columnas, int puntos) {
 	// función que toma la matriz y coloca los crateres
 	// ojo, filas es x y columnas y en el contexto de los cráteres
 	int i, c, f;
@@ -124,9 +52,9 @@ int leerArchivoPuntos(char *path, int filas, puntoC *puntos) {
 	size_t sizep;
 	char buff[1000];
 	char *tok;
-	long int i, j;
-	int error;
-	double elem;
+	long int i;
+	int error=0;
+	
 	FILE *datosAltitud;
 	sizep = strlen(path);
 	if (sizep != 0) {
@@ -166,12 +94,12 @@ int leerArchivoTexto_Matriz(char *path, int filas, int columnas, celda *matriz) 
 	char buff[8192];
 	char *tok;
 	long int i, j;
-	int error;
+	int error=0;
 	double elem;
 	FILE *datosAltitud;
 	sizep = strlen(path);
 	if (sizep != 0) {
-		printf("\nIntentando leer el archivo de altitudes...\n", path);
+		printf("\nIntentando leer el archivo de altitudes...%s \n", path);
 		printf("Archivo a leer: %s\n", path);
 		datosAltitud = fopen(path, "r");
 		if (datosAltitud != NULL) {
@@ -420,7 +348,7 @@ void FuncionPrincipal(int filas, int columnas, celda *A, celda *C) {
 	double Q_base = 0.0;
 	delta_t = c0.deltat;
 	double Aref = 0.0, Href = 0.0;
-	double Acomp = 0.0, Hcomp = 0.0, Hcrit = 0.0, Hcrit2 = 0.0;
+	double Acomp = 0.0, Hcomp = 0.0, Hcrit = 0.0;
 	double cArea = c0.anchoCelda*c0.anchoCelda;
 	double alfa = 0.0;
 	// primer ciclo que es solo para inicializar
@@ -628,8 +556,8 @@ int prepararVisualizacionGNUPlot(int secuencia, char *path, int filas, int colum
 	// nombreArchivo + secuencia.png
 	FILE *datosAltitud;
 	FILE *encabezado;
-	size_t sizep;
-	int i, j, flag;
+	size_t sizep=0;
+	int i, j, flag=0;
 	double xcoord, ycoord, zcoord, temp;
 	sizep = strlen(path);
 	long int cont;
@@ -670,7 +598,7 @@ int prepararVisualizacionGNUPlot(int secuencia, char *path, int filas, int colum
 			// escribiendo el encabezado, pero en GNUPLOT es diferente
 			// se muestran opciones para png y eps
 			// fprintf(encabezado,"set terminal png size 400,300 enhanced font \"Helvetica,20\"\n\n",newpath);
-			fprintf(encabezado,"set terminal png size 1366,720 enhanced\n\n",newpath);
+			fprintf(encabezado,"set terminal png size 1366,720 enhanced %s \n\n",newpath);
 			fprintf(encabezado,"set output '%s.png'\n",newpath);
 			// dejo estas líneas comentadas por si necesito configurar mejor 
 			// la visualización.
@@ -706,6 +634,7 @@ int prepararVisualizacionGNUPlot(int secuencia, char *path, int filas, int colum
 		flag=system(command);
 		printf("Mensaje del comando %d\n", flag);
 	}
+	return flag;
 }
 
 // Esta es una copia de la funcion anterior que ignora los espacios extras
@@ -727,7 +656,7 @@ int prepararVisualizacionGNUPlot_2(int secuencia, char *path, int filas, int col
 	FILE *datosAltitud;
 	FILE *encabezado;
 	size_t sizep;
-	int i, j, flag;
+	int i, j, flag=0;
 	double xcoord, ycoord, zcoord, temp;
 	sizep = strlen(path);
 	long int cont;
@@ -768,7 +697,7 @@ int prepararVisualizacionGNUPlot_2(int secuencia, char *path, int filas, int col
 			// escribiendo el encabezado, pero en GNUPLOT es diferente
 			// se muestran opciones para png y eps
 			// fprintf(encabezado,"set terminal png size 400,300 enhanced font \"Helvetica,20\"\n\n",newpath);
-			fprintf(encabezado,"set terminal png size 1366,720 enhanced\n\n",newpath);
+			fprintf(encabezado,"set terminal png size 1366,720 enhanced %s \n\n",newpath);
 			fprintf(encabezado,"set output '%s.png'\n",newpath);
 			// dejo estas líneas comentadas por si necesito configurar mejor 
 			// la visualización.
@@ -804,6 +733,7 @@ int prepararVisualizacionGNUPlot_2(int secuencia, char *path, int filas, int col
 		flag=system(command);
 		printf("Mensaje del comando %d\n", flag);
 	}
+	return flag;
 }
 
 
@@ -827,7 +757,7 @@ int obtenerPath(char path[]) {
 
 // función para colocar \ donde sean necesarios y de esta manera
 // poder usar paths y nombres de archivos con espacios.
-int limpiarPath(char path[], char spath[]) {
+void limpiarPath(char path[], char spath[]) {
 	char r_path[1024], f_path[1024];
 	int i, j;
 	int lg = 0;
@@ -848,14 +778,14 @@ int limpiarPath(char path[], char spath[]) {
 	strcpy(spath, f_path);
 }
 
-int generarAnimacionGNUPlot(char nombreArchivo[], int secuencia) {
-	/* ----------------------------------------------------------
-	 * En construcción.
-	 * "mencoder mf://*.%s -mf w=1366:h=720:fps=5:type=png -ovc copy -oac copy -o %S", "png", nombre.avi
-	 * Función para generar un video a partir de imágenes fijas.
-	 * ---------------------------------------------------------- */
+// int generarAnimacionGNUPlot(char nombreArchivo[], int secuencia) {
+// 	 ----------------------------------------------------------
+// 	 * En construcción.
+// 	 * "mencoder mf://*.%s -mf w=1366:h=720:fps=5:type=png -ovc copy -oac copy -o %S", "png", nombre.avi
+// 	 * Función para generar un video a partir de imágenes fijas.
+// 	 * ---------------------------------------------------------- 
 	 
-}
+// }
 
 // Una función netamente de prueba para generar una secuencia de imagenes mediante
 // GNUPlot.  En la función principal no se necesita ya que se llama a prepararVisualizacionGNUPlot
@@ -864,7 +794,7 @@ int generarAnimacionGNUPlot(char nombreArchivo[], int secuencia) {
 void testAnimacion() {
 	int sec, i, j, flag;
 	char path[1024];
-	celda test[MAX_ROWS*MAX_COLS], result[MAX_ROWS*MAX_COLS];
+	celda test[MAX_ROWS*MAX_COLS]; // result[MAX_ROWS*MAX_COLS];
 	flag = 0;
 	leerArchivoTexto_Matriz("/home/sergio/altitudes.mat", MAX_ROWS, MAX_COLS, test);
 	flag = obtenerPath(path);
@@ -888,8 +818,8 @@ int main(int argc, char *argv[]) {
 	int i,flag = 0;
 	celda *testPoint, *resultPoint, *resultCalc, *resultPoint2;
 	puntoC *crateres;
-	int fila = 0;
-	int columna = 0;
+	// int fila = 0;
+	// int columna = 0;
 	int puntosCrater = 0;
 	char s_path[1024];
 	char a_path[1024];

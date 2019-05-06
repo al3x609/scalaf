@@ -1,0 +1,7 @@
+-se separa prototipos en proto.h
+-fix valor de retorno en funciones que no lo requieren
+    inicializar variables 
+    printf corrección de valores impresos sin tipo
+    se suprime variables no usadas
+
+

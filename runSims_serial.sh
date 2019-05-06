@@ -2,7 +2,7 @@
 
 # Acá asigno las variables, para que sea más facil editar los valores
 NUM_SIMS=10
-ARCH_EXEC=scalaf_serial_imp
+ARCH_EXEC=scalaf
 ARCH_ALTITUD=altitudesMil.csv
 ARCH_CRATER=aCraterMil
 TEMP_ERUP=1500
@@ -33,8 +33,8 @@ for i in `seq 0 $((${NUM_SIMS}-1))`;
 	time ./$ARCH_EXEC -t $TEMP_ERUP -v $TASA_ERUP -w $WIDTH -s $ARCH_CRATER -a $ARCH_ALTITUD -r $FILAS -c $COLS -p $NUM_CRATER -e $NOMBRE -n $PASOS_TIEMPO > $ARCH_SALIDA
 	# acá tambien tiene que ir el comando de comprimir el resultado
 	tar -zcvpf ${NOMBRE}.tgz ${NOMBRE}_*
-	mkdir /sergio_tmp/backups
-    mv ${NOMBRE}.tgz /sergio_tmp/backups
+	mkdir -p ./backups
+    mv ${NOMBRE}.tgz ./backups
 	echo "Archivo copiado en backups"
 	rm ${NOMBRE}_*
 	echo "Archivos limpiados"
